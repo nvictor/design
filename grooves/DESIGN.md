@@ -1,4 +1,4 @@
-# Grooves: 1FA Design Document
+# Grooves: Design Document
 
 ## 1. Introduction
 

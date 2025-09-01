@@ -1,4 +1,4 @@
-# Vignette: 1FA Design Document
+# Vignette: Design Document
 
 ## 1. Introduction
 

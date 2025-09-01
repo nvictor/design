@@ -1,4 +1,4 @@
-# Moves: 1FA Design Document
+# Moves: Design Document
 
 ## 1. Introduction
 

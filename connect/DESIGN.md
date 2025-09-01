@@ -1,4 +1,4 @@
-# Connect: 1FA Design Document
+# Connect: Design Document
 
 ## 1. Introduction
 

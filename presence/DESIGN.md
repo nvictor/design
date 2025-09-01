@@ -1,4 +1,4 @@
-# Presence: 1FA Design Document
+# Presence: Design Document
 
 ## 1. Introduction
 
