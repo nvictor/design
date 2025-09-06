@@ -6,14 +6,14 @@ This document outlines the design for **Connect**, a single-file SwiftUI applica
 
 ## 2. File Structure
 
-The application is contained entirely within `connect.swift`. The code is organized by grouping related components, following this order:
+The application is organized into separate Swift files within the Connect project, although a single-file version also exists in the `1fa` folder:
 
-1.  **Models**: `Node`, `Connector`, `NodeSide`
-2.  **Component Views**: `NodeView`, `ConnectorView`
-3.  **Custom Shapes**: `ArrowHead`
-4.  **Main View**: `ContentView`
-5.  **App Entry Point**: `ConnectApp`
-6.  **Utility Views**: `KeyCatcherView`
+1.  **Models**: `Node.swift`, `Connector.swift`, `NodeSide.swift`
+2.  **Component Views**: `NodeView.swift`, `ConnectorView.swift`
+3.  **Custom Shapes**: `ArrowHead.swift`
+4.  **Main View**: `ContentView.swift`
+5.  **App Entry Point**: `ConnectApp.swift`
+6.  **Utility Views**: `KeyCatcherView.swift`
 
 ## 3. Application Architecture
 

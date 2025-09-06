@@ -4,7 +4,20 @@
 This document describes the design and architecture of a Treemap, a SwiftUI-based application for visualizing hierarchical data using a space-filling treemap layout.
 
 ## Data Model
-- **Node**: Represents a node in the hierarchy. Each node has an `id`, a `size`, and an array of child nodes. Nodes can be nested to represent hierarchical structures. The `prepare()` method ensures that the node's size is at least the sum of its children and sorts children by size.
+- **Node**: Represents a node in the hierarchy. Each node has an `id` (String), a `size` (Double), and an array of child nodes. Nodes can be nested to represent hierarchical structures. The `prepare()` method ensures that the node's size is at least the sum of its children and sorts children by size in descending order. The Node struct conforms to `Identifiable`, `Equatable`, and `Codable` protocols.
+
+```swift
+struct Node: Identifiable, Equatable, Codable {
+    var id: String
+    var size: Double
+    var children: [Node]
+    
+    mutating func prepare() {
+        // Recursively prepare children and adjust size
+        // Sort children by size (largest first)
+    }
+}
+```
 
 ## Treemap Layout
 - **Treemap**: The main struct responsible for computing the layout of nodes. It uses a squarified treemap algorithm to partition the available space among child nodes, alternating between horizontal and vertical splits.
@@ -13,12 +26,20 @@ This document describes the design and architecture of a Treemap, a SwiftUI-base
 
 ## Rendering
 - **TreemapView**: A SwiftUI view that recursively renders the treemap. It draws rectangles for each node, overlays labels, and handles user interactions such as hover and tap. It uses `GeometryReader` to adapt to available space and recursively renders child nodes using the computed layout.
-- **ContentView**: The app's main view. It loads hierarchical data from a JSON file, prepares the root node, and displays the treemap. It manages state for the currently hovered node and zoom interactions.
+- **ContentView**: The app's main view. It loads hierarchical data from a JSON file (`data.json`), prepares the root node, and displays the treemap. It manages state for the currently hovered node and zoom interactions through a `ZoomController` instance.
 
 ## User Interaction
-- **ZoomController**: An observable object that tracks the currently selected (zoomed) node path. The treemap layout adapts to focus on the selected node if set.
+- **ZoomController**: An observable object that tracks the currently selected (zoomed) node path using an array of node IDs (`NodePath`). The treemap layout adapts to focus on the selected node if set.
 - **Hovering**: The view highlights nodes on hover and updates the hovered path state.
-- **Tapping**: Tapping a node can trigger zoom or selection logic (implementation can be extended).
+- **Tapping**: Tapping a node triggers zoom functionality to focus on that part of the hierarchy.
+
+```swift
+final class ZoomController: ObservableObject {
+    @Published var selectedPath: NodePath?
+}
+
+typealias NodePath = [String]
+```
 
 ## Algorithm Details
 - **Squarified Treemap**: The layout algorithm divides the available rectangle among children to minimize aspect ratio variance, improving readability. It uses a recursive approach, alternating orientation at each level.

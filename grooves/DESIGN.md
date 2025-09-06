@@ -6,14 +6,14 @@ This document outlines the design for **Grooves**, a single-file SwiftUI applica
 
 ## 2. File Structure
 
-The application is contained entirely within `grooves.swift`. The code is organized by grouping related components, following this order:
+The application is organized into separate Swift files within the Grooves project:
 
-1.  **Models**: `Beat`, `Preset`
-2.  **View Models / Managers**: `PlaybackManager`, `PresetManager`, `SoundService`
-3.  **Component Views**: `BeatBlock`
-4.  **Main Views**: `ContentView`, `Editor`, `Sidebar`, `Inspector`
-5.  **App Entry Point**: `GroovesApp`
-6.  **Utility Structs**: `ImageExporter`
+1.  **Models**: `Beat.swift`, `Preset.swift`
+2.  **View Models / Managers**: `PlaybackManager.swift`, `PresetManager.swift`, `SoundService.swift`, `AudioEngineManager.swift`, `VelocityGenerator.swift`
+3.  **Component Views**: `BeatBlock.swift`
+4.  **Main Views**: `ContentView.swift`, `Editor.swift`, `Sidebar.swift`, `Inspector.swift`
+5.  **App Entry Point**: `GroovesApp.swift`
+6.  **Utility Structs**: `ImageExporter.swift`, `MIDIExporter.swift`
 
 ## 3. Application Architecture
 
@@ -36,14 +36,22 @@ The application's entry point is the `GroovesApp` struct, marked with `@main`.
 ## 4. State Management
 
 -   **`@StateObject`**: `ContentView` owns a `PlaybackManager` as a `@StateObject` to manage the application's core logic and playback state.
--   **`PlaybackManager`**: An `ObservableObject` that encapsulates the playback logic, including the timer, current beat, BPM, and the `groove` data. It uses a `SoundService` to play audio.
+-   **`PlaybackManager`**: An `ObservableObject` that encapsulates the playback logic, including the timer, current beat, BPM, and the `groove` data. It includes advanced features like:
+    - Multiple instrument sounds via `AudioEngineManager`
+    - Groove styles and velocity generation
+    - Time signature support
+    - Dynamic contour controls for expressive playback
 -   **`@State`**: Used for simple view state, such as the currently selected `preset` and the `showInspector` boolean.
 -   **`@Binding`**: Used to pass state down to child views like `Editor` and `Inspector`, allowing them to modify the state owned by `ContentView` and `PlaybackManager`.
 
 ## 5. Data Modeling
 
--   **`Beat`**: An `enum` representing the state of a single beat (`empty`, `low`, `high`). It includes helper methods to cycle through states and determine visual style.
+-   **`Beat`**: An `enum` representing the state of a single beat (`empty`, `low`, `high`). It includes helper methods to cycle through states and determine visual style, plus velocity information for realistic playback.
 -   **`Preset`**: An `Identifiable` struct that stores a named groove pattern, containing a `name` and an array of `Beat`s.
+-   **`Instrument`**: An `enum` defining available instrument sounds for playback.
+-   **`GrooveStyle`**: An `enum` representing different musical groove styles (rock, jazz, etc.) that affect velocity patterns.
+-   **`TimeSignature`**: An `enum` for different time signatures (4/4, 3/4, etc.).
+-   **`Contour`**: An `enum` for dynamic contour shapes that influence velocity curves.
 
 ## 6. Data Persistence
 
@@ -55,8 +63,15 @@ The application's entry point is the `GroovesApp` struct, marked with `@main`.
 
 ### 7.1. Playback Control
 
-Playback is controlled via toolbar buttons (Play/Stop) and the spacebar key. The `PlaybackManager` uses a `Timer` to advance the sequence and a `SoundService` to play a system "tink" sound for each active beat.
+Playback is controlled via toolbar buttons (Play/Stop) and the spacebar key. The `PlaybackManager` uses a `Timer` to advance the sequence and an `AudioEngineManager` with `SoundService` to play audio for each active beat.
 
-### 7.2. Image Exporting
+### 7.2. Export Features
 
-An `ImageExporter` utility allows the user to export the current `Editor` view as a PNG image using SwiftUI's `ImageRenderer` and `NSSavePanel`.
+- **Image Exporting**: An `ImageExporter` utility allows the user to export the current `Editor` view as a PNG image using SwiftUI's `ImageRenderer` and `NSSavePanel`.
+- **MIDI Exporting**: A `MIDIExporter` utility enables exporting grooves as MIDI files, supporting different time signatures and BPM settings.
+
+### 7.3. Enhanced Audio
+
+The application includes sophisticated audio features:
+- **Velocity Generation**: Dynamic velocity assignment to beats for more realistic playback
+- **Audio Engine**: Advanced audio processing using AVAudioEngine for high-quality sound output

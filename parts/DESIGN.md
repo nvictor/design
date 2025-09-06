@@ -6,14 +6,14 @@ This document outlines the design for **Parts**, a single-file SwiftUI applicati
 
 ## 2. File Structure
 
-The application is contained entirely within `parts.swift`. The code is organized by grouping related components, following this order:
+The application is organized into separate Swift files within the Parts project:
 
-1.  **Models**: `Segment`, `Part`, `Preset`
-2.  **Managers**: `PresetManager`
-3.  **Component Views**: `SegmentBlock`
-4.  **Main Views**: `ContentView`, `Editor`, `Sidebar`, `Inspector`
-5.  **App Entry Point**: `PartsApp`
-6.  **Utility Structs**: `ImageExporter`
+1.  **Models**: `Segment.swift`, `Part.swift`, `Preset.swift`
+2.  **Managers**: `PresetManager.swift`
+3.  **Component Views**: `SegmentBlock.swift`
+4.  **Main Views**: `ContentView.swift`, `Editor.swift`, `Sidebar.swift`, `Inspector.swift`
+5.  **App Entry Point**: `PartsApp.swift`
+6.  **Utility Structs**: `ImageExporter.swift`
 
 ## 3. Application Architecture
 

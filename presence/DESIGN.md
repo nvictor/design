@@ -6,14 +6,14 @@ This document outlines the design for **Presence**, a single-file SwiftUI applic
 
 ## 2. File Structure
 
-The application is contained entirely within `presence.swift`. The code is organized by grouping related components, following this order:
+The application is organized into separate Swift files within the Presence project, although a single-file version also exists in the `1fa` folder:
 
-1.  **Models**: `Attendee`
-2.  **View Models**: `AttendeeViewModel`
-3.  **Component Views**: `AvatarCard`, `IconPicker`, `RenameSheet`
-4.  **Main View**: `ContentView`
-5.  **App Entry Point**: `PresenceApp`
-6.  **ViewModifiers**: `ShakeEffect`
+1.  **Models**: `Attendee.swift`
+2.  **View Models**: `AttendeeViewModel.swift`
+3.  **Component Views**: `AvatarCard.swift`, `IconPicker.swift`, `RenameSheet.swift`
+4.  **Main View**: `ContentView.swift`
+5.  **App Entry Point**: `PresenceApp.swift`
+6.  **ViewModifiers**: `ShakeEffect.swift`
 
 ## 3. Application Architecture
 

@@ -10,14 +10,12 @@ The application connects to the Kubernetes API server to fetch resource data.
 
 Authentication is supported via a local `kubeconfig` file. The primary method for local development, the app parses `~/.kube/config` to get the cluster URL, certificate, token, and other settings.
 
--   **Client Certificates:** Authenticates using the client certificate and key data specified in the `kubeconfig`. The implementation uses a sophisticated keychain-based approach:
-    -   First checks if a matching certificate already exists in the macOS Keychain (common with minikube/kubectl usage)
-    -   If found, creates a `SecIdentity` using the existing certificate paired with the private key from kubeconfig
-    -   If not found, temporarily imports both certificate and private key into the Keychain to create a `SecIdentity`
-    -   Uses `SecIdentityCreateWithCertificate` for reliable identity creation with proper certificate-key pairing
-    -   Handles keychain access gracefully with automatic cleanup of temporary items
--   **Bearer Tokens:** Supports bearer tokens, including those obtained from `exec` plugins.
--   **TLS Verification:** Respects the `insecure-skip-tls-verify` flag for clusters with self-signed certificates.
+-   **Client Certificates:** Authenticates using the client certificate and key data specified in the `kubeconfig`. The implementation uses a simplified keychain-based approach:
+    -   Uses `SecIdentityCreateWithCertificate` to create a `SecIdentity` from certificate data
+    -   Handles keychain access gracefully with error logging
+    -   Supports certificate-based authentication for TLS client authentication
+-   **Bearer Tokens:** Supports bearer tokens, including those obtained from `exec` plugins with full environment variable support.
+-   **TLS Verification:** Respects the `insecure-skip-tls-verify` flag for clusters with self-signed certificates. Includes smart defaults for common development patterns (minikube, localhost, private IPs).
 
 ### Networking
 
@@ -48,11 +46,12 @@ The size of each rectangle in the treemap represents a specific metric:
 A recursive `TreeNode` struct serves as the core model for the treemap visualization.
 
 ```swift
-struct TreeNode: Identifiable {
+struct TreeNode: Identifiable, Hashable {
     let id = UUID()
     let name: String
     let value: Double // Determines the size of the node's rectangle
     let children: [TreeNode]
+    var isLeaf: Bool { children.isEmpty }
 }
 ```
 
@@ -62,25 +61,34 @@ A custom SwiftUI view recursively renders the treemap.
 
 ### Implementation
 
-The view uses `GeometryReader` to read the available space and proportionally divide it among its children based on their `value`.
+The view uses `GeometryReader` to read the available space and proportionally divide it among its children based on their `value`. The implementation includes sophisticated zoom functionality and treemap layout calculations.
 
 ```swift
 struct TreemapView: View {
+    @EnvironmentObject private var viewModel: ClusterViewModel
     let node: TreeNode
-    var depth: Int = 0
+    let path: [UUID]
+    @State private var hoveredPath: [UUID]?
 
     var body: some View {
-        GeometryReader { geo in
-            if node.children.isEmpty {
-                // Render the leaf node with a color based on its value
-            } else {
-                // Recursively split the geometry for child nodes
-                TreemapSplitView(children: node.children, ...)
+        GeometryReader { geometry in
+            ZStack(alignment: .topLeading) {
+                backgroundView
+                labelView(geometry: geometry)
+                childrenView(geometry: geometry)
             }
         }
+        .background(Color(.windowBackgroundColor))
+        .clipped()
+        .padding(LayoutConstants.mainPadding)
     }
 }
 ```
+
+The implementation includes:
+- **ZoomController**: Handles zoom state and determines which children to show based on the selected path
+- **TreemapLayoutCalculator**: Computes optimal treemap layouts using a squarified algorithm
+- **Interactive Features**: Hover effects, click-to-zoom functionality, and breadcrumb navigation
 
 Cell colors are generated on a logarithmic scale based on the node's value, providing a visual heatmap of resource consumption. Text color automatically adjusts for readability against the background.
 
@@ -88,17 +96,30 @@ Cell colors are generated on a logarithmic scale based on the node's value, prov
 
 The main interface features:
 
--   A central `TreemapView` displaying the cluster resources.
--   Segmented pickers to switch between hierarchy views and sizing metrics.
--   A settings sidebar for managing cluster connections.
+-   A central `TreemapView` displaying the cluster resources with zoom and hover interactions.
+-   An Inspector sidebar containing:
+    - Connection settings with kubeconfig path configuration
+    - Display controls with segmented pickers for hierarchy views (Resource Type vs Namespace) and sizing metrics (Count, CPU, Memory)
+    - Console view showing logs and status messages
+-   Toolbar with reload and inspector toggle buttons.
+
+### Hierarchy and Metric Options
+
+The application supports two hierarchy views:
+- **By Resource Type (Resource)**: Namespace → Deployment → Pod
+- **By Namespace (Namespace)**: Namespace → Kind (e.g., "Deployments", "Pods") → Resource Name
+
+Three sizing metrics are available:
+- **Count**: Size based on the number of resources
+- **CPU**: Size based on CPU requests (in cores)
+- **Memory**: Size based on memory requests (in bytes)
 
 ## 5. Security & Deployment
 
 -   **Keychain Access:** The application requires the `keychain-access-groups` entitlement to access certificates in the macOS Keychain. The client certificate authentication implementation:
-    -   Searches for existing certificates in Keychain by comparing certificate data to avoid duplicates
-    -   Handles keychain errors gracefully (e.g., duplicate items, missing entitlements)
-    -   Uses temporary keychain storage with automatic cleanup for imported private keys
-    -   Validates certificate-identity pairing to ensure correct authentication credentials
-    -   Supports both RSA and EC private keys with automatic key type detection
+    -   Uses `SecIdentityCreateWithCertificate` for identity creation from certificate data
+    -   Handles keychain errors gracefully (e.g., missing certificates, access issues)
+    -   Supports certificate-based authentication for secure cluster connections
+    -   Logs authentication issues to help with debugging connection problems
 -   **Local Use:** The app is designed to run on macOS and connect directly to the cluster via the user's `kubeconfig` or a service account token.
 -   **Team/Enterprise Use:** For wider distribution, a backend-for-frontend (BFF) approach would be recommended to avoid distributing cluster credentials to client applications.

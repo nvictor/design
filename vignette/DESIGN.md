@@ -6,13 +6,13 @@ This document outlines the design for **Vignette**, a single-file SwiftUI applic
 
 ## 2. File Structure
 
-The application is contained entirely within `vignette.swift`. The code is organized by grouping related components, following this order:
+The application is organized into separate Swift files within the Vignette project, although a single-file version also exists in the `1fa` folder:
 
-1.  **Background Views**: `BGLayeredWaves`, `BGLowPoly`, `BGVanishingRays`, `BGRandom`
-2.  **Main Views**: `ContentView`, `JokeView`
-3.  **App Entry Point**: `VignetteApp`
-4.  **Utility Structs**: `ImageExporter`
-5.  **ViewModifiers**: `StrokeModifier`
+1.  **Background Views**: `BGLayeredWaves.swift`, `BGLowPoly.swift`, `BGVanishingRays.swift`, `BGRandom.swift`
+2.  **Main Views**: `ContentView.swift`, `JokeView.swift`
+3.  **App Entry Point**: `VignetteApp.swift`
+4.  **Utility Structs**: `ImageExporter.swift`
+5.  **ViewModifiers**: `StrokeModifier.swift`
 
 ## 3. Application Architecture
 

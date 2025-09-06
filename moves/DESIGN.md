@@ -6,14 +6,14 @@ This document outlines the design for **Moves**, a single-file SwiftUI applicati
 
 ## 2. File Structure
 
-The application is contained entirely within `moves.swift`. The code is organized by grouping related components, following this order:
+The application is organized into separate Swift files within the Moves project:
 
-1.  **Models**: `Line`, `Segment`, `Movement`, `Preset`
-2.  **Managers**: `PresetManager`
-3.  **Component Views**: `SegmentBlock`
-4.  **Main Views**: `ContentView`, `Editor`, `Sidebar`, `Inspector`
-5.  **App Entry Point**: `MovesApp`
-6.  **Utility Structs**: `ImageExporter`
+1.  **Models**: `Line.swift`, `Segment.swift`, `Movement.swift`, `Preset.swift`
+2.  **Managers**: `PresetManager.swift`
+3.  **Component Views**: `SegmentBlock.swift`
+4.  **Main Views**: `ContentView.swift`, `Editor.swift`, `Sidebar.swift`, `Inspector.swift`
+5.  **App Entry Point**: `MovesApp.swift`
+6.  **Utility Structs**: `ImageExporter.swift`
 
 ## 3. Application Architecture
 
