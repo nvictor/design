@@ -4,7 +4,7 @@ This document outlines the design for a SwiftUI-based Kubernetes treemap visuali
 
 ## 1. Connecting to a Kubernetes Cluster
 
-The application connects to the Kubernetes API server to fetch resource data.
+The application connects to the Kubernetes API server to fetch resource data and the Kubernetes Metrics Server for real-time usage data.
 
 ### Authentication
 
@@ -19,27 +19,24 @@ Authentication is supported via a local `kubeconfig` file. The primary method fo
 
 ### Networking
 
--   **API Client:** `URLSession` is used for making REST API calls to the Kubernetes server. A custom `URLSessionDelegate` handles TLS server trust validation and client certificate challenges.
+-   **API Client:** `URLSession` is used for making REST API calls to the Kubernetes server and the Metrics Server. A custom `URLSessionDelegate` handles TLS server trust validation and client certificate challenges.
 -   **Data Parsing:** Swift's `Codable` protocol is used to decode the JSON responses into native Swift objects. A YAML parser (`Yams`) is used as a fallback for parsing `kubeconfig` files.
 
 ## 2. Treemap Data Structure
 
 Kubernetes objects are transformed into a hierarchical structure suitable for a treemap.
 
-### Hierarchy Views
+### Hierarchy View
 
-The user can switch between two distinct hierarchical views:
-
--   **By Resource Type:** A structural view showing `Namespace` → `Deployment` → `Pod`. This is useful for understanding the parent-child relationships between resources.
--   **By Namespace:** A categorical view showing `Namespace` → `Kind` (e.g., "Deployments", "CronJobs") → `Resource Name`. This is useful for getting an inventory of all resources running in a namespace.
+The application uses a single, structural hierarchy to display resources: `Namespace` → `Deployment` → `Pod`. This view is useful for understanding the parent-child and ownership relationships between the core workload resources in the cluster.
 
 ### Sizing Metrics
 
-The size of each rectangle in the treemap represents a specific metric:
+The size of each rectangle in the treemap represents a specific real-time usage metric, fetched from the Kubernetes Metrics Server.
 
 -   **Resource Count:** Size based on the number of child resources.
--   **CPU:** Size based on CPU requests.
--   **Memory:** Size based on memory requests.
+-   **CPU:** Size based on real-time CPU usage (in cores).
+-   **Memory:** Size based on real-time memory usage (in bytes).
 
 ### Core Data Model
 
@@ -90,7 +87,11 @@ The implementation includes:
 - **TreemapLayoutCalculator**: Computes optimal treemap layouts using a squarified algorithm
 - **Interactive Features**: Hover effects, click-to-zoom functionality, and breadcrumb navigation
 
-Cell colors are generated on a logarithmic scale based on the node's value, providing a visual heatmap of resource consumption. Text color automatically adjusts for readability against the background.
+The application uses a dual coloring strategy to enhance clarity:
+- **Parent Nodes (Namespaces, Deployments):** Are assigned a stable, distinct color based on their name. This provides a clear and consistent visual structure for the hierarchy.
+- **Leaf Nodes (Pods):** Are colored using a heatmap scale from green (low usage) to red (high usage). The color is determined by the pod's resource consumption relative to the most resource-intensive pod in the cluster, making it easy to spot performance hotspots at a glance.
+
+Text color automatically adjusts for readability against all backgrounds.
 
 ## 4. User Interface
 
@@ -99,20 +100,19 @@ The main interface features:
 -   A central `TreemapView` displaying the cluster resources with zoom and hover interactions.
 -   An Inspector sidebar containing:
     - Connection settings with kubeconfig path configuration
-    - Display controls with segmented pickers for hierarchy views (Resource Type vs Namespace) and sizing metrics (Count, CPU, Memory)
+    - Display controls with a segmented picker for sizing metrics (Count, CPU, Memory)
     - Console view showing logs and status messages
 -   Toolbar with reload and inspector toggle buttons.
 
 ### Hierarchy and Metric Options
 
-The application supports two hierarchy views:
-- **By Resource Type (Resource)**: Namespace → Deployment → Pod
-- **By Namespace (Namespace)**: Namespace → Kind (e.g., "Deployments", "Pods") → Resource Name
+The application supports a single hierarchy view:
+- **Resource Hierarchy**: Namespace → Deployment → Pod
 
-Three sizing metrics are available:
+Three sizing metrics are available, based on real-time usage:
 - **Count**: Size based on the number of resources
-- **CPU**: Size based on CPU requests (in cores)
-- **Memory**: Size based on memory requests (in bytes)
+- **CPU**: Size based on CPU usage (in cores). Values less than 1 core are displayed in millicores (e.g., "50m").
+- **Memory**: Size based on memory usage (in bytes)
 
 ## 5. Security & Deployment
 
@@ -121,5 +121,5 @@ Three sizing metrics are available:
     -   Handles keychain errors gracefully (e.g., missing certificates, access issues)
     -   Supports certificate-based authentication for secure cluster connections
     -   Logs authentication issues to help with debugging connection problems
--   **Local Use:** The app is designed to run on macOS and connect directly to the cluster via the user's `kubeconfig` or a service account token.
+-   **Local Use:** The app is designed to run on macOS and connect directly to the cluster via the user's `kubeconfig` or a service account token. It requires that the **Kubernetes Metrics Server** is installed and running in the cluster.
 -   **Team/Enterprise Use:** For wider distribution, a backend-for-frontend (BFF) approach would be recommended to avoid distributing cluster credentials to client applications.
