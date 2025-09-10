@@ -89,7 +89,7 @@ The implementation includes:
 
 The application uses a dual coloring strategy to enhance clarity:
 - **Parent Nodes (Namespaces, Deployments):** Are assigned a stable, distinct color based on their name. This provides a clear and consistent visual structure for the hierarchy.
-- **Leaf Nodes (Pods):** Are colored using a heatmap scale from green (low usage) to red (high usage). The color is determined by the pod's resource consumption relative to the most resource-intensive pod in the cluster, making it easy to spot performance hotspots at a glance.
+- **Leaf Nodes (Pods):** Are colored using a heatmap scale from green (low usage) to orange (high usage). The color is determined by the pod's resource consumption relative to the most resource-intensive pod in the cluster, making it easy to spot performance hotspots at a glance.
 
 Text color automatically adjusts for readability against all backgrounds.
 
