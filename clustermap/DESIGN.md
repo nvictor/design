@@ -8,19 +8,23 @@ The application connects to the Kubernetes API server to fetch resource data and
 
 ### Authentication
 
-Authentication is supported via a local `kubeconfig` file. The primary method for local development, the app parses `~/.kube/config` to get the cluster URL, certificate, token, and other settings.
+Authentication is handled via a local `kubeconfig` file. The application parses `~/.kube/config` to get the cluster URL, certificate, token, and other settings.
 
--   **Client Certificates:** Authenticates using the client certificate and key data specified in the `kubeconfig`. The implementation uses a simplified keychain-based approach:
-    -   Uses `SecIdentityCreateWithCertificate` to create a `SecIdentity` from certificate data
-    -   Handles keychain access gracefully with error logging
-    -   Supports certificate-based authentication for TLS client authentication
--   **Bearer Tokens:** Supports bearer tokens, including those obtained from `exec` plugins with full environment variable support.
--   **TLS Verification:** Respects the `insecure-skip-tls-verify` flag for clusters with self-signed certificates. Includes smart defaults for common development patterns (minikube, localhost, private IPs).
+-   **Client Certificates:** Authenticates using client certificate and key data from the `kubeconfig`. The implementation uses `SecIdentityCreateWithCertificate` to create a `SecIdentity` on-the-fly from certificate data for TLS client authentication.
+-   **Bearer Tokens:** Supports static bearer tokens from the `kubeconfig`.
+-   **Exec Plugins:** Provides robust support for `exec` plugins to obtain dynamic credentials.
+    -   **GKE Support:** Includes specific logic to locate and execute the `gke-gcloud-auth-plugin`, searching common installation paths (e.g., Homebrew, Google Cloud SDK) to ensure it works out-of-the-box for most users. Provides detailed, user-friendly error messages if the plugin is not found.
+    -   **Environment:** Correctly resolves environment variables specified in the `kubeconfig` for the `exec` command.
+-   **TLS Verification:** A custom `URLSessionDelegate` (`TLSDelegate`) handles TLS validation.
+    -   Respects the `insecure-skip-tls-verify` flag.
+    -   Includes smart defaults to automatically skip verification for common development patterns (minikube, localhost, private IPs).
+    -   Supports custom Certificate Authorities (CAs) for clusters like GKE, using a `SecPolicyCreateBasicX509` policy for reliable validation.
 
 ### Networking
 
--   **API Client:** `URLSession` is used for making REST API calls to the Kubernetes server and the Metrics Server. A custom `URLSessionDelegate` handles TLS server trust validation and client certificate challenges.
--   **Data Parsing:** Swift's `Codable` protocol is used to decode the JSON responses into native Swift objects. A YAML parser (`Yams`) is used as a fallback for parsing `kubeconfig` files.
+-   **API Client:** `URLSession` makes REST API calls to the Kubernetes server and the Metrics Server. A custom `User-Agent` (`Clustermap/1.0`) is sent with all requests.
+-   **Performance:** Resource fetching is highly concurrent. The app uses Swift's modern concurrency features (`async/await` and `withThrowingTaskGroup`) to fetch data for all namespaces in parallel, significantly speeding up load times for large clusters.
+-   **Data Parsing:** Swift's `Codable` protocol decodes JSON responses into native Swift objects. The `Yams` library is used to parse the `kubeconfig` file.
 
 ## 2. Treemap Data Structure
 
@@ -58,38 +62,28 @@ A custom SwiftUI view recursively renders the treemap.
 
 ### Implementation
 
-The view uses `GeometryReader` to read the available space and proportionally divide it among its children based on their `value`. The implementation includes sophisticated zoom functionality and treemap layout calculations.
+The view uses `GeometryReader` to read the available space and proportionally divide it among its children based on their `value`.
 
 ```swift
 struct TreemapView: View {
     @EnvironmentObject private var viewModel: ClusterViewModel
     let node: TreeNode
+    let maxLeafValue: Double
     let path: [UUID]
     @State private var hoveredPath: [UUID]?
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .topLeading) {
-                backgroundView
-                labelView(geometry: geometry)
-                childrenView(geometry: geometry)
-            }
-        }
-        .background(Color(.windowBackgroundColor))
-        .clipped()
-        .padding(LayoutConstants.mainPadding)
-    }
+    // ...
 }
 ```
 
 The implementation includes:
-- **ZoomController**: Handles zoom state and determines which children to show based on the selected path
-- **TreemapLayoutCalculator**: Computes optimal treemap layouts using a squarified algorithm
-- **Interactive Features**: Hover effects, click-to-zoom functionality, and breadcrumb navigation
+- **ZoomController**: A dedicated controller that manages the zoom state, determining which children to render based on the user's selection. This allows for drilling down into nested layers of the hierarchy.
+- **TreemapLayoutCalculator**: Computes optimal treemap layouts using a squarified algorithm, ensuring that rectangles are as close to square as possible for better readability and comparison.
+- **Interactive Features**: Smooth hover effects, click-to-zoom functionality, and breadcrumb-style navigation managed via the `selectedPath`.
+- **Value Formatting:** Resource values are formatted for human readability. For example, CPU values less than 1 core are displayed in millicores (e.g., "500m"), and memory is shown in Gi, Mi, or Ki.
 
 The application uses a dual coloring strategy to enhance clarity:
-- **Parent Nodes (Namespaces, Deployments):** Are assigned a stable, distinct color based on their name. This provides a clear and consistent visual structure for the hierarchy.
-- **Leaf Nodes (Pods):** Are colored using a heatmap scale from green (low usage) to orange (high usage). The color is determined by the pod's resource consumption relative to the most resource-intensive pod in the cluster, making it easy to spot performance hotspots at a glance.
+- **Parent Nodes (Namespaces, Deployments):** Are assigned a stable, distinct color based on a hash of their name. This provides a clear and consistent visual structure for the hierarchy.
+- **Leaf Nodes (Pods):** Are colored using a heatmap scale from green (low usage) to orange/red (high usage). The color is determined by the pod's resource consumption relative to the most resource-intensive pod in the cluster, making it easy to spot performance hotspots at a glance.
 
 Text color automatically adjusts for readability against all backgrounds.
 
@@ -99,27 +93,17 @@ The main interface features:
 
 -   A central `TreemapView` displaying the cluster resources with zoom and hover interactions.
 -   An Inspector sidebar containing:
-    - Connection settings with kubeconfig path configuration
-    - Display controls with a segmented picker for sizing metrics (Count, CPU, Memory)
-    - Console view showing logs and status messages
--   Toolbar with reload and inspector toggle buttons.
-
-### Hierarchy and Metric Options
-
-The application supports a single hierarchy view:
-- **Resource Hierarchy**: Namespace → Deployment → Pod
-
-Three sizing metrics are available, based on real-time usage:
-- **Count**: Size based on the number of resources
-- **CPU**: Size based on CPU usage (in cores). Values less than 1 core are displayed in millicores (e.g., "50m").
-- **Memory**: Size based on memory usage (in bytes)
+    - **Connection:** A text field to specify the `kubeconfig` path.
+    - **Display:** A segmented picker to switch between sizing metrics (Count, CPU, Memory).
+    - **Console:** An interactive console view that displays timestamped logs with different severity levels (Info, Success, Error), each with a distinct color and icon. Users can select, copy, and clear logs.
+-   A Toolbar with buttons to reload data and toggle the inspector sidebar.
 
 ## 5. Security & Deployment
 
--   **Keychain Access:** The application requires the `keychain-access-groups` entitlement to access certificates in the macOS Keychain. The client certificate authentication implementation:
-    -   Uses `SecIdentityCreateWithCertificate` for identity creation from certificate data
-    -   Handles keychain errors gracefully (e.g., missing certificates, access issues)
-    -   Supports certificate-based authentication for secure cluster connections
-    -   Logs authentication issues to help with debugging connection problems
--   **Local Use:** The app is designed to run on macOS and connect directly to the cluster via the user's `kubeconfig` or a service account token. It requires that the **Kubernetes Metrics Server** is installed and running in the cluster.
+-   **App Sandbox:** The application is **not sandboxed** (`com.apple.security.app-sandbox` is `false`). This is a deliberate choice to allow the app to execute `exec` helper tools like `gke-gcloud-auth-plugin`, which is essential for authenticating with major cloud providers.
+-   **Entitlements:** The app requests the following entitlements:
+    -   `com.apple.security.files.user-selected.read-only`: To read the user-specified `kubeconfig` file.
+    -   `com.apple.security.network.client`: To connect to Kubernetes API servers on the network.
+-   **Network Security:** The `Info.plist` is configured with `NSAllowsArbitraryLoads` set to `true`. This is necessary to connect to local clusters (e.g., minikube) and cloud provider clusters (like GKE) that use IP addresses in their server certificates, which would otherwise be blocked by App Transport Security (ATS).
+-   **Local Use:** The app is designed to run on macOS and connect directly to the cluster via the user's `kubeconfig`. It requires that the **Kubernetes Metrics Server** is installed and running in the cluster.
 -   **Team/Enterprise Use:** For wider distribution, a backend-for-frontend (BFF) approach would be recommended to avoid distributing cluster credentials to client applications.
