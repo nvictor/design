@@ -12,10 +12,8 @@ Each project includes comprehensive design documentation that reflects the curre
 
 ## Applications
 
-- **Clustermap**: Kubernetes treemap visualizer with authentication and resource metrics
 - **Treemap**: Generic hierarchical data visualization using squarified treemap layouts
 - **Grooves**: Musical step-sequencer with audio engine and MIDI export
-- **Jiraiya**: Native macOS Companion to JIRA
 - **Moves**: Musical phrase composer with segment-based arrangements
 - **Parts**: Song structure arranger for musical compositions
 - **Connect**: Node-and-connector diagram creator
