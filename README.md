@@ -17,7 +17,6 @@ Each project includes comprehensive design documentation that reflects the curre
 - **Moves**: Musical phrase composer with segment-based arrangements
 - **Parts**: Song structure arranger for musical compositions
 - **Connect**: Node-and-connector diagram creator
-- **Presence**: Group attendance status tracker
 - **Vignette**: Stylized image generator for text content
 
 All design documents are kept current with the actual implementations to ensure accuracy and usefulness for development and maintenance.
