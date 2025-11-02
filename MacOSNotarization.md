@@ -34,6 +34,18 @@ An Application ID (or Bundle ID) is a unique identifier for your application, ty
 
 While you can register App IDs manually on the Apple Developer website, Xcode typically handles this for you when you create a new project. You can view and edit the Bundle ID in the "Signing & Capabilities" tab of your project's target settings.
 
+#### Registering an App ID with Xcode
+
+1. Open your project in Xcode.
+2. In the Project Navigator, select your project (the top blue icon).
+3. In the main editor, select your app target under the Targets section.
+4. Click the Signing & Capabilities tab.
+5. Under Team, select your Apple Developer account.
+    * If you haven’t added one: go to Xcode ▸ Settings ▸ Accounts ▸ + ▸ Apple ID.
+6. Xcode will automatically:
+    * Create a Bundle Identifier for you if one doesn’t exist.
+    * Register an App ID with that Bundle ID in your developer account when you build or run the app on a real device.
+
 ### Profiles
 
 A provisioning profile is a file that connects the developer's identity (via the certificate) and the application's identity (via the App ID). For "Developer ID" distribution, it also contains the entitlements that your application is permitted to use.
